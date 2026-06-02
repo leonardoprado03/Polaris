@@ -1,2 +1,39 @@
 # Polaris---A-multi-database-literature-review-system
 POLARIS is an R (Shiny) application designed to streamline multi-database literature searches and export results in RIS format, fully compatible with tools such as Zotero, Mendeley, and EndNote. Polaris enhances the audibility and transparency of the evidence synthesis process, thereby improving the traceability of the literature review workflow.
+.
+
+🔎 Multi-database search
+Run queries across major academic databases, including PubMed, Scopus, ScienceDirect, and Semantic Scholar.
+
+📄 Standardized export
+All results are exported as .ris files, ensuring seamless integration with reference managers such as Zotero, Mendeley, and EndNote.
+
+📊 Search logging
+Each search generates a structured results_log.csv, allowing you to track queries, monitor results, and document execution status for reproducibility.
+
+🗂️ Structured outputs
+Results can be automatically organized into folders based on query groups, making it easier to manage large-scale literature reviews.
+
+⚡ Performance-focused execution
+POLARIS is designed for efficiency, with batch processing, built-in rate limiting, retry handling, and a background worker system that keeps the Shiny interface responsive during long runs.
+
+🎯 Use Cases
+POLARIS is particularly useful for:
+
+Systematic literature reviews
+Meta-analyses
+Evidence synthesis workflows
+Academic research pipelines
+⚙️ Requirements
+To run POLARIS, you will need:
+
+R ≥ 4.0
+RStudio (recommended)
+Elsevier API Key and Institutional Token (required for Scopus and ScienceDirect)
+Why POLARIS?
+Literature searches are often fragmented, manual, and difficult to reproduce—especially when combining multiple databases, each with its own interface, limitations, and export formats.
+
+POLARIS addresses these challenges by bringing everything into a single environment. It unifies search workflows, automates large-scale query execution, and ensures reproducibility through structured logging and standardized outputs.
+
+Instead of switching between platforms and manually consolidating results, POLARIS allows you to run, monitor, and export your entire search strategy from one place, making it especially powerful for systematic reviews and data-intensive research projects.
+
