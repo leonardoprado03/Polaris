@@ -1,4 +1,4 @@
-# Polaris---A-multi-database-literature-review-system
+# Polaris-A multi database literature review system
 POLARIS is an R (Shiny) application designed to streamline multi-database literature searches and export results in RIS format, fully compatible with tools such as Zotero, Mendeley, and EndNote. Polaris enhances the audibility and transparency of the evidence synthesis process, thereby improving the traceability of the literature review workflow.
 .
 
