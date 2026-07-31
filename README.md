@@ -11,7 +11,7 @@ To launch the application:
 setwd("src")
 shiny::runApp()
 ```
-POLARIS automatically checks for and installs any required R packages during the first execution. The complete source code is available in the src/ directory of this repository. For citation and long-term preservation, a versioned release is archived on Zenodo (DOI) and can be downloaded at https://zenodo.org/records/21724638
+POLARIS automatically checks for and installs any required R packages during the first execution. The complete source code is available in the src/ directory of this repository. For citation and long-term preservation, a versioned release is archived on Zenodo (DOI) and can be downloaded at [https://zenodo.org/records/21724638](https://zenodo.org/records/21724915)
 
 🔎 Multi-database search
 Run queries across major academic databases, including PubMed, Scopus, ScienceDirect, and Semantic Scholar.
