@@ -10,6 +10,7 @@ To launch the application:
 ```r
 setwd("src")
 shiny::runApp()
+```
 POLARIS automatically checks for and installs any required R packages during the first execution.
 
 🔎 Multi-database search
