@@ -1,0 +1,61 @@
+data_execucao,base_dados,grupo_pasta,query,api_total,web_total
+7/21/2026 17:16,pubmed,all,urban heat island AND heat related mortality AND cities,69,69
+7/21/2026 17:17,pubmed,all,extreme heat AND public health AND vulnerability,950,949
+7/21/2026 17:17,pubmed,all,heat exposure AND informal workers AND urban,19,19
+7/21/2026 17:17,pubmed,all,heat AND critical infrastructure AND resilience,43,42
+7/21/2026 17:17,pubmed,all,heat wave AND energy demand AND cooling,7,7
+7/21/2026 17:17,pubmed,all,thermal discomfort AND urban public space,11,11
+7/21/2026 17:17,pubmed,all,heat adaptation AND low income communities,53,53
+7/21/2026 17:17,pubmed,all,urban climate AND heat exposure AND mapping,24,24
+7/21/2026 17:17,pubmed,all,surface temperature AND urban vegetation AND cooling,114,114
+7/21/2026 17:17,pubmed,all,heat related illness AND occupational exposure,231,231
+7/21/2026 17:17,pubmed,all,urban flooding AND critical infrastructure,115,115
+7/21/2026 17:18,pubmed,all,flood risk AND GIS AND urban,90,90
+7/21/2026 17:18,pubmed,all,flash flood AND social vulnerability,10,10
+7/21/2026 17:18,pubmed,all,flood AND climate adaptation AND cities,149,149
+7/21/2026 17:18,pubmed,all,flood exposure AND informal settlements,21,21
+7/21/2026 17:18,pubmed,all,extreme precipitation AND urban flooding,98,98
+7/21/2026 17:18,pubmed,all,human wildlife conflict AND urban expansion,49,49
+7/21/2026 17:18,pubmed,all,urban wildlife AND climate adaptation,67,67
+7/21/2026 17:18,pubmed,all,wildlife AND habitat fragmentation AND urban,274,274
+7/21/2026 17:19,pubmed,all,human disturbance AND wildlife behavior,954,953
+7/21/2026 17:19,scopus,all,urban heat island AND heat related mortality AND cities,168,168
+7/21/2026 17:19,scopus,all,extreme heat AND public health AND vulnerability,488,488
+7/21/2026 17:19,scopus,all,heat exposure AND informal workers AND urban,6,6
+7/21/2026 17:19,scopus,all,heat AND critical infrastructure AND resilience,347,347
+7/21/2026 17:19,scopus,all,heat wave AND energy demand AND cooling,289,289
+7/21/2026 17:19,scopus,all,thermal discomfort AND urban public space,80,80
+7/21/2026 17:20,scopus,all,heat adaptation AND low income communities,99,99
+7/21/2026 17:20,scopus,all,urban climate AND heat exposure AND mapping,139,139
+7/21/2026 17:20,scopus,all,surface temperature AND urban vegetation AND cooling,1183,1183
+7/21/2026 17:20,scopus,all,heat related illness AND occupational exposure,297,297
+7/21/2026 17:21,scopus,all,urban flooding AND critical infrastructure,680,680
+7/21/2026 17:21,scopus,all,flood risk AND GIS AND urban,1330,1330
+7/21/2026 17:21,scopus,all,flash flood AND social vulnerability,164,164
+7/21/2026 17:22,scopus,all,flood AND climate adaptation AND cities,1428,1428
+7/21/2026 17:22,scopus,all,flood exposure AND informal settlements,57,57
+7/21/2026 17:22,scopus,all,extreme precipitation AND urban flooding,768,767
+7/21/2026 17:22,scopus,all,human wildlife conflict AND urban expansion,75,75
+7/21/2026 17:22,scopus,all,urban wildlife AND climate adaptation,68,68
+7/21/2026 17:23,scopus,all,wildlife AND habitat fragmentation AND urban,423,423
+7/21/2026 17:23,scopus,all,human disturbance AND wildlife behavior,835,835
+7/21/2026 17:24,scidir,all,urban heat island AND heat related mortality AND cities,6000,6000
+7/21/2026 17:25,scidir,all,extreme heat AND public health AND vulnerability,6000,6000
+7/21/2026 17:26,scidir,all,heat exposure AND informal workers AND urban,1970,2021
+7/21/2026 17:27,scidir,all,heat AND critical infrastructure AND resilience,6000,6000
+7/21/2026 17:28,scidir,all,heat wave AND energy demand AND cooling,6000,6000
+7/21/2026 17:29,scidir,all,thermal discomfort AND urban public space,5146,5249
+7/21/2026 17:30,scidir,all,heat adaptation AND low income communities,6000,6000
+7/21/2026 17:31,scidir,all,urban climate AND heat exposure AND mapping,6000,6000
+7/21/2026 17:32,scidir,all,surface temperature AND urban vegetation AND cooling,6000,6000
+7/21/2026 17:33,scidir,all,heat related illness AND occupational exposure,6000,6000
+7/21/2026 17:34,scidir,all,urban flooding AND critical infrastructure,6000,6000
+7/21/2026 17:35,scidir,all,flood risk AND GIS AND urban,6000,6000
+7/21/2026 17:36,scidir,all,flash flood AND social vulnerability,5741,5941
+7/21/2026 17:37,scidir,all,flood AND climate adaptation AND cities,6000,6000
+7/21/2026 17:37,scidir,all,flood exposure AND informal settlements,3304,3429
+7/21/2026 17:38,scidir,all,extreme precipitation AND urban flooding,6000,6000
+7/21/2026 17:40,scidir,all,human wildlife conflict AND urban expansion,6000,6000
+7/21/2026 17:41,scidir,all,urban wildlife AND climate adaptation,6000,6000
+7/21/2026 17:42,scidir,all,wildlife AND habitat fragmentation AND urban,6000,6000
+7/21/2026 17:43,scidir,all,human disturbance AND wildlife behavior,6000,6000
