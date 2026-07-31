@@ -1,6 +1,16 @@
 # Polaris-An Automated Literature Retrieval System
 POLARIS is an R (Shiny) application designed to streamline multi-database literature searches and export results in RIS format, fully compatible with tools such as Zotero, Mendeley, and EndNote. Polaris enhances the audibility and transparency of the evidence synthesis process, thereby improving the traceability of the literature review workflow.
-.
+
+## Source code
+
+The complete source code is available in the `src/` directory of this repository.
+
+To launch the application:
+
+```r
+setwd("src")
+shiny::runApp()
+POLARIS automatically checks for and installs any required R packages during the first execution.
 
 🔎 Multi-database search
 Run queries across major academic databases, including PubMed, Scopus, ScienceDirect, and Semantic Scholar.
