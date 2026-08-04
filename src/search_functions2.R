@@ -41,12 +41,6 @@ ensure_dirs <- function(groups = NULL) {
 }
 
 detect_group <- function(q) {
-  qs <- tolower(q)
-  if (grepl("street hawker", qs)) return("street hawker")
-  if (grepl("sidewalk vendor", qs)) return("sidewalk vendor")
-  if (grepl("street vendor", qs)) return("street vendors")
-  if (grepl("informal outdoor worker", qs)) return("informal outdoor worker")
-  if (grepl("informal labor", qs)) return("informal labor")
   "all"
 }
 
@@ -113,48 +107,70 @@ elsevier_error_message <- function(code) {
     paste0("Elsevier HTTP error (", code, ").")
   )
 }
-# === CROSSREF ABSTRACT RECOVERY ===
-get_abstract_from_crossref <- function(doi) {
-  if (is.null(doi) || doi == "" || is.na(doi)) return("")
-  
-  # Avoid Erro 400
-  doi_clean <- gsub("^doi:", "", trimws(doi), ignore.case = TRUE)
-  doi_clean <- URLencode(doi_clean, reserved = TRUE)
-  url <- paste0("https://api.crossref.org/works/", doi_clean)
-  
-  res <- tryCatch({
-    # Avoid Error 401 (Elsevier keys)
-    httr::GET(url, 
-              httr::add_headers(Accept = "application/json"),
-              httr::user_agent("PolarisSearch/1.0 (mailto:seu_email@asu.edu)"),
-              httr::timeout(10))
-  }, error = function(e) return(NULL))
-  
-  if (!is.null(res) && httr::status_code(res) == 200) {
-    payload <- jsonlite::fromJSON(httr::content(res, "text", encoding = "UTF-8"), simplifyVector = FALSE)
-    raw_abstract <- payload$message$abstract %||% ""
-    # Remove XML/JATS tags from the CrossRef abstract
-    return(gsub("<[^>]*>", "", raw_abstract)) 
-  }
-  return("")
-}
-# === DOI CACHE (Crossref) ===
-.doi_cache <- new.env(parent = emptyenv())
 
-lookup_doi <- function(title) {
-  if (is.null(title) || nchar(title) < 5) return("")
-  key <- tolower(trimws(title))
-  if (!is.null(.doi_cache[[key]])) return(.doi_cache[[key]])
+# === SEMANTIC SCHOLAR — BATCH ABSTRACT RECOVERY ===
+get_abstracts_batch_semantic_scholar <- function(dois, batch_size = 500) {
+  dois_validos <- dois[!is.na(dois) & nzchar(dois)]
+  if (length(dois_validos) == 0) return(list())
   
-  url <- paste0("https://api.crossref.org/works?query.title=", URLencode(title), "&rows=1")
-  res <- tryCatch(jsonlite::fromJSON(url), error = function(e) NULL)
-  if (is.null(res) || length(res$message$items) == 0) {
-    .doi_cache[[key]] <- ""
-    return("")
+  ids_formatados <- paste0("DOI:", trimws(dois_validos))
+  chunks <- split(ids_formatados, ceiling(seq_along(ids_formatados) / batch_size))
+  
+  resultado_map <- list()
+  
+  for (i in seq_along(chunks)) {
+    message(sprintf("📦 Semantic Scholar batch %d/%d (%d DOIs)...", i, length(chunks), length(chunks[[i]])))
+    
+    body <- list(ids = as.list(chunks[[i]]))
+    
+    res <- tryCatch({
+      httr::POST(
+        "https://api.semanticscholar.org/graph/v1/paper/batch",
+        query = list(fields = "externalIds,abstract"),
+        body = body,
+        encode = "json",
+        httr::add_headers(`User-Agent` = "PolarisSearch/1.0 (mailto:seu_email@asu.edu)",
+                          `Content-Type` = "application/json"),
+        httr::timeout(30)
+      )
+    }, error = function(e) {
+      message("⚠ Erro de conexão no batch: ", e$message)
+      return(NULL)
+    })
+    
+    if (is.null(res)) next
+    
+    status <- httr::status_code(res)
+    if (status == 429) {
+      message("⏳ Rate limit atingido, aguardando 20s...")
+      Sys.sleep(20)
+      next
+    }
+    
+    if (status != 200) {
+      message(sprintf("⚠ Batch %d falhou (HTTP %d)", i, status))
+      next
+    }
+    
+    payload <- tryCatch(
+      jsonlite::fromJSON(httr::content(res, "text", encoding = "UTF-8"), simplifyVector = FALSE),
+      error = function(e) NULL
+    )
+    if (is.null(payload)) next
+    
+    for (item in payload) {
+      if (is.null(item)) next
+      doi_ret <- item$externalIds$DOI %||% NA
+      abs_ret <- item$abstract %||% ""
+      if (!is.na(doi_ret) && nzchar(abs_ret)) {
+        resultado_map[[tolower(doi_ret)]] <- abs_ret
+      }
+    }
+    
+    Sys.sleep(1)
   }
-  doi <- res$message$items$doi[1] %||% ""
-  .doi_cache[[key]] <- doi
-  doi
+  
+  return(resultado_map)
 }
 
 # === RIS HELPERS ===
@@ -177,7 +193,7 @@ make_ris <- function(df) {
   
   ris_list <- c()
   
-
+  
   for (i in 1:nrow(df)) {
     # Safe extraction
     t  <- clean_field(df$title[i])
@@ -262,7 +278,7 @@ get_pubmed_results <- function(query) {
     return(data.frame())
   }
   message(" ✅ Total PubMed records found: ", count_total)
-
+  
   res_ids <- httr::GET(
     url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
     query = list(
@@ -332,9 +348,12 @@ get_pubmed_results <- function(query) {
     # avoid error 419
     Sys.sleep(0.6) 
   }
-
+  
   return(dplyr::bind_rows(all_recs))
 }
+# ==========================
+# SCOPUS
+# ==========================
 # ==========================
 # SCOPUS
 # ==========================
@@ -355,8 +374,8 @@ get_scopus_results <- function(query, fetch_abstracts_scopus = FALSE, api_key = 
         query = list(
           query = scopus_query,
           cursor = current_cursor,
-          count = 100, 
-          view = "STANDARD"
+          count = 25, 
+          view = "complete"
         ),
         httr::timeout(60)
       )
@@ -375,43 +394,59 @@ get_scopus_results <- function(query, fetch_abstracts_scopus = FALSE, api_key = 
     
     status <- httr::status_code(res)
     
-    if (status == 429) {
-      wait_s <- suppressWarnings(as.numeric(httr::headers(res)[["retry-after"]]))
-      if (is.na(wait_s) || wait_s <= 0) wait_s <- 60
-      message("\n[!] ", elsevier_error_message(429), " Waiting ", wait_s, "s...")
-      Sys.sleep(wait_s)
-      next
-    }
-    
-    if (status %in% c(401, 403)) {
-      msg <- elsevier_error_message(status)
-      message("\n[!] ", msg)
-      return(make_polaris_result(
-        data.frame(),
-        status = paste0("ERROR_", status),
-        message = msg
-      ))
-    }
-    
     if (status != 200) {
+      
+      cat("\n==============================\n")
+      cat("HTTP STATUS:", status, "\n")
+      cat("==============================\n")
+      cat(httr::content(res, "text", encoding = "UTF-8"))
+      cat("\n==============================\n")
+      
       msg <- paste0("Scopus HTTP error: ", status)
-      message("\n[!] ", msg)
+      
       return(make_polaris_result(
         data.frame(),
         status = paste0("ERROR_", status),
         message = msg
       ))
     }
-    
     payload <- jsonlite::fromJSON(httr::content(res, "text", encoding = "UTF-8"), simplifyVector = FALSE)
     entries <- payload$`search-results`$entry
     
     if (is.null(entries) || length(entries) == 0) break
     
     df_batch <- purrr::map_df(entries, function(item) {
+      
+      authors_full <- item$`dc:creator` %||% ""
+      
+      if (!is.null(item$author) && length(item$author) > 0) {
+        
+        auths <- vapply(item$author, function(a){
+          
+          if (is.list(a)) {
+            
+            a$authname %||%
+              a$`ce:indexed-name` %||%
+              ""
+            
+          } else {
+            
+            as.character(a)
+            
+          }
+          
+        }, character(1))
+        
+        auths <- auths[nzchar(auths)]
+        
+        if(length(auths)>0)
+          authors_full <- paste(auths, collapse=", ")
+        
+      }
+      
       data.frame(
         title = item$`dc:title` %||% "",
-        authors = item$`dc:creator` %||% "",
+        authors = authors_full,
         year = substr(item$`prism:coverDate` %||% "", 1, 4),
         journal = item$`prism:publicationName` %||% "",
         doi = item$`prism:doi` %||% "",
@@ -450,10 +485,81 @@ get_scopus_results <- function(query, fetch_abstracts_scopus = FALSE, api_key = 
 # ==========================
 # SCIENCEDIRECT
 # ==========================
-get_sciencedirect_test <- function(query, batch_size = 100, api_key = NULL, inst_token = NULL) {
-  message("🔍 ScienceDirect", query)
+# ==========================
+# SCIENCEDIRECT
+# ==========================
+
+# Generic helper: normalizes "single object" vs "list of objects" from JSON.
+# Elsevier sends a single object when there's only 1 item, and a list when there are 2+.
+as_list_of_items <- function(x) {
+  if (is.null(x)) return(list())
+  if (!is.list(x)) return(list(x))
   
-  # 1.  Configure authentication keys (prefer values provided by the application; otherwise, use environment variables)
+  # Heuristic: if the element names look like keys of a SINGLE object
+  # (e.g. "given-name", "surname", "@seq"), it's a single object -> wrap it in a list.
+  # If it's an unnamed list (or empty names), it's already a list of objects.
+  nms <- names(x)
+  looks_like_single_object <- !is.null(nms) && any(nzchar(nms))
+  
+  if (looks_like_single_object) return(list(x))
+  return(x)
+}
+
+extract_scidir_authors <- function(item) {
+  raw <- item$authors
+  
+  author_list <- if (!is.null(raw) && is.list(raw) && !is.null(raw$author)) {
+    as_list_of_items(raw$author)
+  } else if (!is.null(raw) && is.list(raw)) {
+    as_list_of_items(raw)
+  } else {
+    NULL
+  }
+  
+  if (is.null(author_list) || length(author_list) == 0) {
+    return(item$`dc:creator` %||% "Unknown")
+  }
+  
+  names_vec <- sapply(author_list, function(x) {
+    if (!is.list(x)) return(as.character(x))
+    
+    full_name <- x$`$` %||% x$name %||% NULL
+    if (!is.null(full_name)) return(full_name)
+    
+    given <- x$`given-name` %||% x$given %||% ""
+    surname <- x$surname %||% x$`ce:surname` %||% ""
+    full <- trimws(paste(given, surname))
+    if (nzchar(full)) return(full)
+    
+    "Unknown"
+  })
+  
+  names_vec <- names_vec[nzchar(names_vec)]
+  if (length(names_vec) == 0) return("Unknown")
+  paste(names_vec, collapse = ", ")
+}
+
+# Safely extracts the total result count, covering the formats
+# the Elsevier API may return (plain text/number or nested object).
+extract_total_results <- function(payload) {
+  raw <- payload$`search-results`$`opensearch:totalResults`
+  
+  if (is.character(raw) || is.numeric(raw)) {
+    val <- suppressWarnings(as.numeric(raw))
+    if (!is.na(val)) return(val)
+  }
+  
+  if (is.list(raw) && !is.null(raw$`$`)) {
+    val <- suppressWarnings(as.numeric(raw$`$`))
+    if (!is.na(val)) return(val)
+  }
+  
+  return(NA_real_)
+}
+
+get_sciencedirect_test <- function(query, batch_size = 100, api_key = NULL, inst_token = NULL) {
+  message("🔍 ScienceDirect ", query)
+  
   ak <- if (!is.null(api_key) && nzchar(api_key)) api_key else Sys.getenv("ELSEVIER_API_KEY")
   it <- if (!is.null(inst_token) && nzchar(inst_token)) inst_token else Sys.getenv("ELSEVIER_INST_TOKEN")
   
@@ -469,7 +575,7 @@ get_sciencedirect_test <- function(query, batch_size = 100, api_key = NULL, inst
         httr::timeout(30)
       )
     }, error = function(e) {
-      message("⚠ connection failure: ", e$message)
+      message("⚠ Connection failure: ", e$message)
       return(NULL)
     })
     
@@ -514,18 +620,9 @@ get_sciencedirect_test <- function(query, batch_size = 100, api_key = NULL, inst
     entries <- payload$`search-results`$entry
     
     if (is.null(entries) || length(entries) == 0) break
-  
+    
     df_batch <- purrr::map_df(entries, function(item) {
-      raw_auths <- item$authors %||% item$`dc:creator` %||% "Unknown"
-      
-      auth_final <- if (is.list(raw_auths)) {
-        sapply(raw_auths, function(x) {
-          if (is.list(x)) return(x$name %||% x$`$` %||% "Unknown")
-          return(as.character(x))
-        }) %>% paste(collapse = ", ")
-      } else {
-        as.character(raw_auths)
-      }
+      auth_final <- extract_scidir_authors(item)
       
       data.frame(
         title = as.character(item$`dc:title` %||% "No Title"),
@@ -540,14 +637,19 @@ get_sciencedirect_test <- function(query, batch_size = 100, api_key = NULL, inst
     })
     
     all_dfs[[length(all_dfs) + 1]] <- df_batch
-    total_baixado <- sum(sapply(all_dfs, nrow))
-    message(sprintf("ScienceDirect | collected: %s", total_baixado))
+    total_downloaded <- sum(sapply(all_dfs, nrow))
+    message(sprintf("ScienceDirect | collected: %s", total_downloaded))
     
-    # Pagination
-    total_disponivel <- as.numeric(payload$`search-results`$`opensearch:totalResults` %||% 0)
+    # Pagination (NA-safe)
+    total_available <- extract_total_results(payload)
+    
+    if (is.na(total_available)) {
+      message("⚠ Could not read the total result count from ScienceDirect on this page; stopping pagination for this query (keeping what was already collected).")
+      break
+    }
+    
     start_idx <- start_idx + batch_size
-    
-    if (start_idx >= total_disponivel || start_idx >= 6000) break
+    if (start_idx >= total_available || start_idx >= 6000) break
     Sys.sleep(0.5) # avoid error 419
   }
   
@@ -557,7 +659,6 @@ get_sciencedirect_test <- function(query, batch_size = 100, api_key = NULL, inst
   
   return(make_polaris_result(dplyr::bind_rows(all_dfs), status = "Success", message = ""))
 }
-
 #########################
 # Semantic Scholar 
 #########################
@@ -732,9 +833,13 @@ run_search_for_source <- function(src, queries, results_dir = root_path,
                                   grouping_mode = "none", single_group = "all_queries",
                                   rules_df = NULL, default_group = "other",
                                   skip_done = TRUE, per_query_delay = 1.2,
-                                  fetch_abstracts_scopus = FALSE,
+                                  fetch_abstracts_scopus = NULL,
                                   api_key = NULL, inst_token = NULL) {
   
+  # sciencedirect usually cames without abstract
+  if (is.null(fetch_abstracts_scopus)) {
+    fetch_abstracts_scopus <- src %in% c("scidir", "scopus")
+  }
   # 1. Log file paths
   dir_src <- file.path(results_dir, paste0("results_", src))
   dir.create(dir_src, recursive = TRUE, showWarnings = FALSE)
@@ -808,27 +913,24 @@ run_search_for_source <- function(src, queries, results_dir = root_path,
     
     # --- POST-PROCESSING (standard mode) ---
     if (n_found > 0 && fetch_abstracts_scopus) {
-      # 1.# 1. Identify records with missing abstracts 
       indices_vazios <- which((is.na(recs$abstract) | recs$abstract == "" | nchar(recs$abstract) < 20) & 
                                 (!is.na(recs$doi) & recs$doi != ""))
       
       if (length(indices_vazios) > 0) {
-        message(sprintf("🔄 Enriching %d abstracts via CrossRef..", length(indices_vazios)))
+        message(sprintf("🔄 Enriquecendo %d abstracts via Semantic Scholar (batch)...", length(indices_vazios)))
         
-        # 2. Process records in batches
+        s2_map <- get_abstracts_batch_semantic_scholar(recs$doi[indices_vazios])
+        
+        n_recuperados <- 0
         for (idx in indices_vazios) {
-          # Retrieve abstract from CrossRef
-          abs_rec <- get_abstract_from_crossref(recs$doi[idx])
-          
-          if (nzchar(abs_rec)) {
-            recs$abstract[idx] <- abs_rec
-          }
-          
-          # Display progress every 50 records
-          if (which(indices_vazios == idx) %% 50 == 0) {
-            message(sprintf("  [Proc: %d/%d]", which(indices_vazios == idx), length(indices_vazios)))
+          doi_key <- tolower(trimws(recs$doi[idx]))
+          if (!is.null(s2_map[[doi_key]])) {
+            recs$abstract[idx] <- s2_map[[doi_key]]
+            n_recuperados <- n_recuperados + 1
           }
         }
+        
+        message(sprintf("✅ Abstracts recuperados via Semantic Scholar: %d/%d", n_recuperados, length(indices_vazios)))
       }
     }
     
